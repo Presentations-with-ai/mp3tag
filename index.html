@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MP3Tag</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg1:#667eea;
+      --bg2:#764ba2;
+      --main:#4f46e5;
+      --main2:#7c3aed;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --soft:#f9fafb;
+      --soft2:#f3f4f6;
+      --ok:#16a34a;
+      --bad:#dc2626;
+      --shadow: 0 18px 42px rgba(31, 41, 55, .22);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 15% 8%, rgba(255,255,255,.28), transparent 28%),
+        radial-gradient(circle at 85% 18%, rgba(255,255,255,.16), transparent 24%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 22px 0 34px;
+    }
+    .page { width: min(92vw, 480px); }
+    .card {
+      position: relative;
+      background: rgba(255,255,255,.96);
+      width: 100%;
+      padding: clamp(18px, 4vw, 24px);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,.65);
+      overflow: hidden;
+      animation: fade .25s ease;
+      backdrop-filter: blur(14px);
+    }
+    .card::before {
+      content:"";
+      position:absolute;
+      inset:0 0 auto 0;
+      height:4px;
+      background:linear-gradient(90deg,#4338ca,#7c3aed,#a78bfa);
+    }
+    @keyframes fade { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:15px; }
+    .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .logo {
+      width:48px; height:48px;
+      border-radius:18px;
+      background:linear-gradient(135deg,#4338ca,#7c3aed);
+      box-shadow:0 14px 28px rgba(79,70,229,.32);
+      display:grid; place-items:center;
+      color:#fff;
+      font-size:23px;
+      flex:0 0 auto;
+    }
+    h1 { margin:0; font-size:25px; line-height:1.05; letter-spacing:-.8px; }
+    .sub { margin-top:5px; color:var(--muted); font-size:13px; font-weight:750; }
+    .badge {
+      background:#f3f4f6;
+      color:#4f46e5;
+      border:1px solid rgba(99,102,241,.12);
+      border-radius:16px;
+      padding:10px 11px;
+      font-size:12px;
+      font-weight:950;
+      white-space:nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    .uploadBox {
+      border:1px dashed rgba(99,102,241,.45);
+      background:linear-gradient(180deg,#fafaff,#f8fafc);
+      border-radius:22px;
+      padding:16px;
+      display:grid;
+      gap:12px;
+    }
+    label {
+      display:block;
+      color:#6b7280;
+      font-size:13px;
+      font-weight:900;
+      margin:13px 0 8px;
+    }
+    input, textarea, select {
+      width:100%;
+      border:1px solid #e5e7eb;
+      outline:none;
+      background:#f9fafb;
+      color:#111827;
+      border-radius:16px;
+      padding:14px;
+      font-size:15px;
+      font-weight:700;
+      transition:.18s ease;
+    }
+    textarea { min-height:98px; resize:vertical; line-height:1.45; }
+    input:focus, textarea:focus, select:focus {
+      border-color:#7c3aed;
+      background:#fff;
+      box-shadow:0 0 0 4px rgba(124,58,237,.13);
+    }
+    input[type="file"] { padding:11px; cursor:pointer; }
+    input[type="file"]::file-selector-button {
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      margin-right:10px;
+      background:#eef2ff;
+      color:#4f46e5;
+      font-weight:950;
+      cursor:pointer;
+    }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .actions { display:grid; gap:10px; margin-top:12px; }
+    .rowActions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    button, .download {
+      width:100%;
+      border:none;
+      border-radius:17px;
+      padding:15px 16px;
+      background:linear-gradient(135deg,#4338ca,#7c3aed);
+      color:#fff;
+      font-size:16px;
+      font-weight:950;
+      cursor:pointer;
+      box-shadow:0 14px 30px rgba(79,70,229,.28);
+      text-decoration:none;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:9px;
+      min-height:52px;
+      transition: transform .14s ease, box-shadow .14s ease, opacity .14s ease;
+    }
+    button:hover, .download:hover { box-shadow:0 18px 36px rgba(79,70,229,.34); transform:translateY(-1px); }
+    button:active, .download:active { transform:scale(.98); }
+    .secondary {
+      background:#fff;
+      color:#4f46e5;
+      border:1px solid rgba(99,102,241,.24);
+      box-shadow:0 10px 22px rgba(0,0,0,.10);
+    }
+    .dangerSoft {
+      background:#fff;
+      color:#dc2626;
+      border:1px solid rgba(220,38,38,.18);
+      box-shadow:0 10px 22px rgba(0,0,0,.08);
+    }
+    .download.disabled, button:disabled { opacity:.55; pointer-events:none; }
+    .miniInfo {
+      display:grid;
+      gap:8px;
+      color:#6b7280;
+      font-size:13px;
+      font-weight:750;
+      line-height:1.45;
+    }
+    .pillLine { display:flex; flex-wrap:wrap; gap:8px; margin-top:3px; }
+    .pill {
+      background:#eef2ff;
+      color:#4f46e5;
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:900;
+    }
+    .coverWrap {
+      display:grid;
+      grid-template-columns:104px 1fr;
+      gap:12px;
+      align-items:center;
+      margin-top:12px;
+    }
+    .coverBox {
+      width:104px;
+      aspect-ratio:1/1;
+      border-radius:22px;
+      background:linear-gradient(135deg,#eef2ff,#f5f3ff);
+      border:1px solid #e5e7eb;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+      color:#7c3aed;
+      font-size:33px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 10px 22px rgba(0,0,0,.08);
+    }
+    .coverBox img { width:100%; height:100%; object-fit:cover; display:block; }
+    .coverText { color:#6b7280; font-size:13px; font-weight:750; line-height:1.45; }
+    .status {
+      margin-top:12px;
+      background:#f9fafb;
+      border:1px solid #e5e7eb;
+      border-radius:17px;
+      padding:13px;
+      color:#6b7280;
+      font-size:13px;
+      font-weight:750;
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+    .ok { color:#16a34a; font-weight:950; }
+    .bad { color:#dc2626; font-weight:950; }
+    audio { width:100%; margin-top:12px; display:none; }
+    .sectionTitle {
+      display:flex; align-items:center; gap:9px;
+      font-size:18px; font-weight:950; margin:0 0 12px;
+      letter-spacing:-.2px;
+    }
+    .hint {
+      color:#6b7280;
+      font-size:12px;
+      font-weight:750;
+      line-height:1.45;
+      margin-top:8px;
+    }
+    @media (max-width:420px) {
+      .grid2, .rowActions { grid-template-columns:1fr; }
+      .coverWrap { grid-template-columns:86px 1fr; }
+      .coverBox { width:86px; border-radius:19px; }
+      h1 { font-size:23px; }
+      .badge { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <div class="top">
+        <div class="brand">
+          <div class="logo">🎵</div>
+          <div>
+            <h1>MP3Tag</h1>
+            <div class="sub">Редактор данных для MP3</div>
+          </div>
+        </div>
+        <div class="badge">MP3</div>
+      </div>
+
+      <div class="uploadBox">
+        <label style="margin:0">🎧 Выбери MP3 файл</label>
+        <input id="mp3File" type="file" accept=".mp3,audio/mpeg,audio/mp3">
+        <div class="miniInfo" id="fileInfo">Файл ещё не выбран</div>
+      </div>
+
+      <div class="pillLine">
+        <span class="pill">Название</span>
+        <span class="pill">Исполнитель</span>
+        <span class="pill">Обложка</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">✏️ Данные трека</div>
+
+      <label>Название трека</label>
+      <input id="title" type="text" placeholder="Например: My Song">
+
+      <label>Исполнитель</label>
+      <input id="artist" type="text" placeholder="Например: Sayfiddinov">
+
+      <label>Альбом</label>
+      <input id="album" type="text" placeholder="Название альбома">
+
+      <div class="grid2">
+        <div>
+          <label>Год</label>
+          <input id="year" type="text" inputmode="numeric" maxlength="4" placeholder="2026">
+        </div>
+        <div>
+          <label>Номер трека</label>
+          <input id="track" type="text" placeholder="1">
+        </div>
+      </div>
+
+      <label>Жанр</label>
+      <input id="genre" type="text" placeholder="Pop, Rap, Remix...">
+
+      <label>Комментарий</label>
+      <textarea id="comment" placeholder="Необязательно"></textarea>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">🖼 Обложка</div>
+      <input id="coverFile" type="file" accept="image/png,image/jpeg,image/webp,image/*">
+
+      <div class="coverWrap">
+        <div class="coverBox" id="coverBox">💿</div>
+        <div class="coverText" id="coverText">Можно выбрать JPG, PNG или WEBP. Картинка будет встроена внутрь MP3 как обложка.</div>
+      </div>
+      <div class="hint">Лучше использовать квадратную картинку: 500×500 или 1000×1000.</div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">⚙️ Готовый файл</div>
+      <div class="actions">
+        <button id="saveBtn">💾 Сохранить MP3</button>
+        <a id="download" class="download disabled" download>⬇️ Скачать MP3</a>
+        <div class="rowActions">
+          <button id="clearCoverBtn" class="secondary" disabled>🧹 Убрать обложку</button>
+          <button id="resetBtn" class="dangerSoft">↩️ Очистить</button>
+        </div>
+      </div>
+      <audio id="player" controls></audio>
+      <div id="status" class="status">Готово</div>
+    </section>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let sourceFile = null;
+    let sourceBytes = null;
+    let currentCover = null;
+    let outputUrl = null;
+    let previewUrl = null;
+
+    function humanSize(bytes) {
+      const units = ["B", "KB", "MB", "GB"];
+      let value = bytes;
+      for (const unit of units) {
+        if (value < 1024) return value.toFixed(2) + " " + unit;
+        value /= 1024;
+      }
+      return value.toFixed(2) + " TB";
+    }
+
+    function safeName(name) {
+      const dot = name.lastIndexOf(".");
+      const base = dot === -1 ? name : name.slice(0, dot);
+      return (base || "track") + "_tagged.mp3";
+    }
+
+    function setStatus(text, type = "") {
+      const cls = type === "ok" ? "ok" : type === "bad" ? "bad" : "";
+      $("status").innerHTML = cls ? '<span class="' + cls + '">' + text + '</span>' : text;
+    }
+
+    function uint32BE(num) {
+      return new Uint8Array([(num>>>24)&255, (num>>>16)&255, (num>>>8)&255, num&255]);
+    }
+
+    function syncsafe(num) {
+      return new Uint8Array([(num>>21)&127, (num>>14)&127, (num>>7)&127, num&127]);
+    }
+
+    function readSyncsafe(arr, off) {
+      return ((arr[off]&127)<<21) | ((arr[off+1]&127)<<14) | ((arr[off+2]&127)<<7) | (arr[off+3]&127);
+    }
+
+    function readUInt32BE(arr, off) {
+      return ((arr[off]<<24) | (arr[off+1]<<16) | (arr[off+2]<<8) | arr[off+3]) >>> 0;
+    }
+
+    function concatArrays(...arrays) {
+      const total = arrays.reduce((s,a)=>s+a.length,0);
+      const out = new Uint8Array(total);
+      let offset = 0;
+      for (const a of arrays) { out.set(a, offset); offset += a.length; }
+      return out;
+    }
+
+    async function fileToBytes(file) {
+      return new Uint8Array(await file.arrayBuffer());
+    }
+
+    function strBytes(str) {
+      return new TextEncoder().encode(str);
+    }
+
+    function latin1ToString(bytes) {
+      let out = "";
+      for (const b of bytes) out += String.fromCharCode(b);
+      return out.replace(/\0+$/g, "");
+    }
+
+    function decodeTextFrame(payload) {
+      if (!payload || payload.length === 0) return "";
+      const enc = payload[0];
+      const body = payload.slice(1);
+      try {
+        if (enc === 0) return latin1ToString(body);
+        if (enc === 1 || enc === 2) return new TextDecoder("utf-16").decode(body).replace(/\0+$/g, "");
+        return new TextDecoder("utf-8").decode(body).replace(/\0+$/g, "");
+      } catch {
+        try { return new TextDecoder("utf-8").decode(body).replace(/\0+$/g, ""); }
+        catch { return ""; }
+      }
+    }
+
+    function decodeCommentFrame(payload) {
+      if (!payload || payload.length < 5) return "";
+      const enc = payload[0];
+      let pos = 4;
+      if (enc === 0 || enc === 3) {
+        while (pos < payload.length && payload[pos] !== 0) pos++;
+        pos++;
+      } else {
+        while (pos + 1 < payload.length && !(payload[pos] === 0 && payload[pos+1] === 0)) pos += 2;
+        pos += 2;
+      }
+      return decodeTextFrame(concatArrays(new Uint8Array([enc]), payload.slice(pos)));
+    }
+
+    function parseApic(payload) {
+      if (!payload || payload.length < 5) return null;
+      const enc = payload[0];
+      let pos = 1;
+      const mimeStart = pos;
+      while (pos < payload.length && payload[pos] !== 0) pos++;
+      const mime = latin1ToString(payload.slice(mimeStart, pos)) || "image/jpeg";
+      pos++;
+      const type = payload[pos] || 3;
+      pos++;
+      if (enc === 0 || enc === 3) {
+        while (pos < payload.length && payload[pos] !== 0) pos++;
+        pos++;
+      } else {
+        while (pos + 1 < payload.length && !(payload[pos] === 0 && payload[pos+1] === 0)) pos += 2;
+        pos += 2;
+      }
+      const data = payload.slice(pos);
+      if (!data.length) return null;
+      return { mime, type, data };
+    }
+
+    function getId3Size(bytes) {
+      if (bytes.length < 10) return 0;
+      if (bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) return 0;
+      return 10 + readSyncsafe(bytes, 6);
+    }
+
+    function stripOldTags(bytes) {
+      let start = getId3Size(bytes);
+      let end = bytes.length;
+      if (end >= 128 && bytes[end-128] === 0x54 && bytes[end-127] === 0x41 && bytes[end-126] === 0x47) {
+        end -= 128;
+      }
+      return bytes.slice(start, end);
+    }
+
+    function parseId3(bytes) {
+      const result = {};
+      const tagSize = getId3Size(bytes);
+      if (!tagSize) return result;
+
+      const major = bytes[3];
+      let pos = 10;
+      const end = Math.min(tagSize, bytes.length);
+      while (pos + 10 <= end) {
+        const id = latin1ToString(bytes.slice(pos, pos + 4));
+        if (!/^[A-Z0-9]{4}$/.test(id)) break;
+        const size = major === 4 ? readSyncsafe(bytes, pos + 4) : readUInt32BE(bytes, pos + 4);
+        if (!size || pos + 10 + size > end) break;
+        const payload = bytes.slice(pos + 10, pos + 10 + size);
+
+        if (id === "TIT2") result.title = decodeTextFrame(payload);
+        if (id === "TPE1") result.artist = decodeTextFrame(payload);
+        if (id === "TALB") result.album = decodeTextFrame(payload);
+        if (id === "TYER" || id === "TDRC") result.year = decodeTextFrame(payload);
+        if (id === "TCON") result.genre = decodeTextFrame(payload);
+        if (id === "TRCK") result.track = decodeTextFrame(payload);
+        if (id === "COMM") result.comment = decodeCommentFrame(payload);
+        if (id === "APIC") result.cover = parseApic(payload);
+
+        pos += 10 + size;
+      }
+      return result;
+    }
+
+    function frame(id, data) {
+      return concatArrays(strBytes(id), uint32BE(data.length), new Uint8Array([0,0]), data);
+    }
+
+    function textFrame(id, text) {
+      const value = (text || "").trim();
+      if (!value) return new Uint8Array();
+      return frame(id, concatArrays(new Uint8Array([3]), strBytes(value)));
+    }
+
+    function commentFrame(text) {
+      const value = (text || "").trim();
+      if (!value) return new Uint8Array();
+      return frame("COMM", concatArrays(new Uint8Array([3]), strBytes("rus"), new Uint8Array([0]), strBytes(value)));
+    }
+
+    function coverFrame(cover) {
+      if (!cover || !cover.data || !cover.data.length) return new Uint8Array();
+      const mime = cover.mime || "image/jpeg";
+      return frame("APIC", concatArrays(
+        new Uint8Array([3]),
+        strBytes(mime),
+        new Uint8Array([0, 3, 0]),
+        cover.data
+      ));
+    }
+
+    function buildId3Tag(meta, cover) {
+      const frames = concatArrays(
+        textFrame("TIT2", meta.title),
+        textFrame("TPE1", meta.artist),
+        textFrame("TALB", meta.album),
+        textFrame("TYER", meta.year),
+        textFrame("TRCK", meta.track),
+        textFrame("TCON", meta.genre),
+        commentFrame(meta.comment),
+        coverFrame(cover)
+      );
+      const header = concatArrays(strBytes("ID3"), new Uint8Array([3,0,0]), syncsafe(frames.length));
+      return concatArrays(header, frames);
+    }
+
+    function fillFields(meta) {
+      $("title").value = meta.title || "";
+      $("artist").value = meta.artist || "";
+      $("album").value = meta.album || "";
+      $("year").value = meta.year || "";
+      $("track").value = meta.track || "";
+      $("genre").value = meta.genre || "";
+      $("comment").value = meta.comment || "";
+      if (meta.cover) setCover(meta.cover, "В файле уже была обложка. Можно оставить её или выбрать новую.");
+      else setCover(null, "Обложка не найдена. Можно выбрать JPG, PNG или WEBP.");
+    }
+
+    function setCover(cover, text) {
+      currentCover = cover;
+      $("clearCoverBtn").disabled = !cover;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+
+      if (cover && cover.data) {
+        const blob = new Blob([cover.data], { type: cover.mime || "image/jpeg" });
+        previewUrl = URL.createObjectURL(blob);
+        $("coverBox").innerHTML = '<img src="' + previewUrl + '" alt="cover">';
+        $("coverText").textContent = text || "Обложка выбрана";
+      } else {
+        $("coverBox").textContent = "💿";
+        $("coverText").textContent = text || "Можно выбрать JPG, PNG или WEBP. Картинка будет встроена внутрь MP3 как обложка.";
+      }
+    }
+
+    function clearDownload() {
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+      outputUrl = null;
+      $("download").removeAttribute("href");
+      $("download").classList.add("disabled");
+      $("download").textContent = "⬇️ Скачать MP3";
+      $("player").style.display = "none";
+      $("player").removeAttribute("src");
+    }
+
+    $("mp3File").onchange = async () => {
+      try {
+        clearDownload();
+        sourceFile = $("mp3File").files[0];
+        if (!sourceFile) return;
+        sourceBytes = await fileToBytes(sourceFile);
+        $("fileInfo").innerHTML = "<b>" + sourceFile.name + "</b><br>Размер: " + humanSize(sourceFile.size);
+        const meta = parseId3(sourceBytes);
+        fillFields(meta);
+        setStatus("MP3 загружен. Данные можно изменить.", "ok");
+      } catch (e) {
+        setStatus(e.message, "bad");
+      }
+    };
+
+    $("coverFile").onchange = async () => {
+      try {
+        const file = $("coverFile").files[0];
+        if (!file) return;
+        const data = await fileToBytes(file);
+        setCover({ mime: file.type || "image/jpeg", data }, "Новая обложка выбрана: " + file.name + " • " + humanSize(file.size));
+        clearDownload();
+      } catch (e) {
+        setStatus(e.message, "bad");
+      }
+    };
+
+    $("clearCoverBtn").onclick = () => {
+      setCover(null, "Обложка будет убрана из готового MP3.");
+      $("coverFile").value = "";
+      clearDownload();
+    };
+
+    $("resetBtn").onclick = () => {
+      clearDownload();
+      ["title","artist","album","year","track","genre","comment"].forEach(id => $(id).value = "");
+      $("coverFile").value = "";
+      setCover(null);
+      setStatus("Поля очищены");
+    };
+
+    $("saveBtn").onclick = async () => {
+      try {
+        if (!sourceFile || !sourceBytes) throw new Error("Сначала выбери MP3 файл");
+        clearDownload();
+
+        const meta = {
+          title: $("title").value,
+          artist: $("artist").value,
+          album: $("album").value,
+          year: $("year").value,
+          track: $("track").value,
+          genre: $("genre").value,
+          comment: $("comment").value
+        };
+
+        const audioData = stripOldTags(sourceBytes);
+        const tag = buildId3Tag(meta, currentCover);
+        const result = concatArrays(tag, audioData);
+        const blob = new Blob([result], { type: "audio/mpeg" });
+        outputUrl = URL.createObjectURL(blob);
+        const name = safeName(sourceFile.name);
+
+        $("download").href = outputUrl;
+        $("download").download = name;
+        $("download").textContent = "⬇️ " + name;
+        $("download").classList.remove("disabled");
+        $("player").src = outputUrl;
+        $("player").style.display = "block";
+        setStatus("Готово\nРазмер: " + humanSize(result.length), "ok");
+      } catch (e) {
+        setStatus(e.message, "bad");
+      }
+    };
+  </script>
+</body>
+</html>
